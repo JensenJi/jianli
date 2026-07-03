@@ -3,12 +3,25 @@ main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
 [vars]
-JWT_SECRET = "your-jwt-secret-change-this-in-production"
+JWT_SECRET = "jianli-secret-2026-jensenji"
+ADMIN_EMAIL = "jensenji@sohu.com"
 
 [[kv_namespaces]]
 binding = "USERS"
-id = "your_users_kv_namespace_id"
+id = "c9ea0e58c4854646baaa2825522b8ef0"
 
 [[kv_namespaces]]
 binding = "MESSAGES"
-id = "your_messages_kv_namespace_id"
+id = "2a23076893e5403093a09b126af98daa"
+
+[[kv_namespaces]]
+binding = "VISITORS"
+id = "e1686607833d4b5a8eb522cc8dec4dcf"
+
+[[kv_namespaces]]
+binding = "PAGE_VIEWS"
+id = "a1f9b887a65f4773a1b5cb5e32a6a87e"
+
+[[kv_namespaces]]
+binding = "STATS"
+id = "c857c8592e624fc78166da6d7dfc858e"

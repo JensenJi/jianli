@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import Home from "@/pages/Home";
 import Travel from "@/pages/Travel";
 import Works from "@/pages/Works";
@@ -9,11 +10,21 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import Admin from "@/pages/Admin";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/context/AuthContext";
+import { trackVisit } from "@/services/visitorService";
+
+function VisitTracker() {
+  const location = useLocation();
+  useEffect(() => {
+    trackVisit(location.pathname);
+  }, [location.pathname]);
+  return null;
+}
 
 export default function App() {
   return (
     <AuthProvider>
       <Router>
+        <VisitTracker />
         <div className="min-h-screen flex flex-col">
           <main className="flex-1">
             <Routes>
