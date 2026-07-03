@@ -188,7 +188,7 @@ const generateRandomStickers = (): Sticker[] => {
 };
 
 const contactInfo = [
-  { icon: HomeIcon, label: "山东省济南市市中区", color: "#1a73e8", isPrivate: false },
+  { icon: WechatIcon, label: "山东省济南市市中区", color: "#07C160", isPrivate: false },
   { icon: WechatIcon, label: "jensenji", color: "#07C160", isPrivate: true },
   { icon: Phone, label: "19206261356", color: "#1a73e8", isPrivate: true },
   { icon: Mail, label: "jensenji@jensenji.cn", color: "#ea4335", isPrivate: false },

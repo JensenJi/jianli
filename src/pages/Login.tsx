@@ -3,6 +3,7 @@ import { User, Lock, Mail, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { ADMIN_EMAIL } from "@/config";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -30,7 +31,7 @@ export default function Login() {
     try {
       if (isLogin) {
         await login(formData.email, formData.password);
-        navigate("/");
+        navigate(formData.email === ADMIN_EMAIL ? "/admin" : "/");
       } else {
         if (formData.password !== formData.confirmPassword) {
           setError("两次密码输入不一致！");
@@ -41,7 +42,7 @@ export default function Login() {
           return;
         }
         await register(formData.email, formData.password, formData.username);
-        navigate("/");
+        navigate(formData.email === ADMIN_EMAIL ? "/admin" : "/");
       }
     } catch (err: any) {
       setError(err.message || "操作失败，请重试");

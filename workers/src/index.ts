@@ -49,18 +49,33 @@ interface Env {
   PAGE_VIEWS: KVNamespace;  // PV 详细记录
   STATS: KVNamespace;       // 统计聚合数据
   JWT_SECRET: string;
+  ADMIN_EMAIL: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
 
 // ==================== 中间件 ====================
 
-app.use('*', async (c, next) => {
+function setCorsHeaders(c: any) {
   c.header('Access-Control-Allow-Origin', '*');
   c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
+app.use('*', async (c, next) => {
+  setCorsHeaders(c);
   if (c.req.method === 'OPTIONS') return c.text('', 204);
-  await next();
+  try {
+    await next();
+  } finally {
+    setCorsHeaders(c);
+  }
+});
+
+app.onError((err, c) => {
+  setCorsHeaders(c);
+  console.error('Worker Error:', err);
+  return c.json({ error: '服务器内部错误' }, 500);
 });
 
 // 管理员鉴权中间件
