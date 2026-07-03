@@ -60,7 +60,7 @@ export default function Navbar() {
             className={location.pathname === "/login" ? "active" : ""}
           >
             <LogIn className="w-4 h-4 inline" />
-            登录
+            注册登录
           </Link>
         )}
       </div>

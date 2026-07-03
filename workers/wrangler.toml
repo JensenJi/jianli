@@ -1,0 +1,14 @@
+name = "jianli-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[vars]
+JWT_SECRET = "your-jwt-secret-change-this-in-production"
+
+[[kv_namespaces]]
+binding = "USERS"
+id = "your_users_kv_namespace_id"
+
+[[kv_namespaces]]
+binding = "MESSAGES"
+id = "your_messages_kv_namespace_id"

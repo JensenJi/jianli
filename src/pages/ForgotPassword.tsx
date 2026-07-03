@@ -20,14 +20,7 @@ export default function ForgotPassword() {
       await forgotPassword(email);
       setSuccess(true);
     } catch (err: any) {
-      // Firebase错误处理
-      if (err.code === "auth/user-not-found") {
-        setError("该邮箱尚未注册");
-      } else if (err.code === "auth/invalid-email") {
-        setError("邮箱格式不正确");
-      } else {
-        setError(err.message || "发送失败，请重试");
-      }
+      setError(err.message || "发送失败，请重试");
     } finally {
       setLoading(false);
     }

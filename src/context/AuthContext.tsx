@@ -1,14 +1,10 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { auth } from "../firebase/config";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  User,
-  sendPasswordResetEmail,
-  updateProfile,
-} from "firebase/auth";
+import { API_BASE_URL } from "@/config";
+
+interface User {
+  email: string;
+  username: string;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -37,41 +33,66 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 页面加载时检查本地 token
   useEffect(() => {
-    if (!auth) {
+    const token = localStorage.getItem("token");
+    if (token) {
+      fetchUser(token);
+    } else {
       setLoading(false);
-      return;
     }
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-    return unsubscribe;
   }, []);
 
+  const fetchUser = async (token: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+      } else {
+        localStorage.removeItem("token");
+      }
+    } catch {
+      localStorage.removeItem("token");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const login = async (email: string, password: string) => {
-    if (!auth) throw new Error("Firebase 未配置");
-    await signInWithEmailAndPassword(auth, email, password);
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "登录失败");
+    localStorage.setItem("token", data.token);
+    setUser(data.user);
   };
 
   const register = async (email: string, password: string, username: string) => {
-    if (!auth) throw new Error("Firebase 未配置");
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(userCredential.user, {
-      displayName: username,
+    const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, username }),
     });
-    setUser(userCredential.user);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "注册失败");
+    localStorage.setItem("token", data.token);
+    setUser(data.user);
   };
 
   const logout = async () => {
-    if (!auth) throw new Error("Firebase 未配置");
-    await signOut(auth);
+    localStorage.removeItem("token");
     setUser(null);
   };
 
   const forgotPassword = async (email: string) => {
-    if (!auth) throw new Error("Firebase 未配置");
-    await sendPasswordResetEmail(auth, email);
+    // 暂不支持，后续可通过 Workers 实现
+    throw new Error("密码重置功能暂未开放");
   };
 
   return (

@@ -4,6 +4,7 @@ import { Users, Mail, Calendar, Shield, LogOut, BarChart3, MessageCircle } from 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMessages, Message } from "@/services/messageService";
+import { ADMIN_EMAIL } from "@/config";
 
 export default function Admin() {
   const { user, logout } = useAuth();
@@ -17,7 +18,7 @@ export default function Admin() {
       return;
     }
 
-    if (user.email !== import.meta.env.VITE_ADMIN_EMAIL) {
+    if (user.email !== ADMIN_EMAIL) {
       navigate("/");
       return;
     }
@@ -36,8 +37,9 @@ export default function Admin() {
     }
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleString("zh-CN", {
+  const formatDate = (date: string | Date) => {
+    const d = typeof date === "string" ? new Date(date) : date;
+    return d.toLocaleString("zh-CN", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
