@@ -83,7 +83,7 @@ async function requireAdmin(c: any): Promise<boolean> {
   const authHeader = c.req.header('Authorization');
   if (!authHeader?.startsWith('Bearer ')) return false;
   try {
-    const payload = await verify(authHeader.slice(7), c.env.JWT_SECRET);
+    const payload = await verify(authHeader.slice(7), c.env.JWT_SECRET, 'HS256');
     return payload.email === c.env.ADMIN_EMAIL;
   } catch {
     return false;
@@ -127,12 +127,12 @@ function parseBrowser(ua: string): string {
 // 获取访客信息
 function getVisitorInfo(c: any): VisitorInfo {
   const ua = c.req.header('User-Agent') || '';
-  const cf = c.req.header('CF-IPCountry') || '';
-  const ip = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For')?.split(',')[0]?.trim() || 'unknown';
+  const cf = c.req.raw?.cf || {};
+  const ip = cf.httpHost || c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For')?.split(',')[0]?.trim() || 'unknown';
   return {
-    country: cf || 'unknown',
-    province: c.req.header('CF-Region') || 'unknown',
-    city: c.req.header('CF-IPCity') || 'unknown',
+    country: cf.country || 'unknown',
+    province: cf.region || cf.regionCode || 'unknown',
+    city: cf.city || 'unknown',
     device: parseDevice(ua),
     browser: parseBrowser(ua),
     ip,
@@ -175,11 +175,38 @@ app.post('/api/auth/login', async (c) => {
   return c.json({ token, user: { email, username: user.username } });
 });
 
+app.put('/api/auth/password', async (c) => {
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) return c.json({ error: '未登录' }, 401);
+
+  let payload;
+  try {
+    payload = await verify(authHeader.slice(7), c.env.JWT_SECRET, 'HS256');
+  } catch {
+    return c.json({ error: '登录已过期' }, 401);
+  }
+
+  const { oldPassword, newPassword } = await c.req.json();
+  if (!oldPassword || !newPassword) return c.json({ error: '请填写所有字段' }, 400);
+  if (newPassword.length < 6) return c.json({ error: '新密码至少需要6位' }, 400);
+
+  const userData = await c.env.USERS.get(payload.email);
+  if (!userData) return c.json({ error: '用户不存在' }, 404);
+
+  const user: User = JSON.parse(userData);
+  if (!(await verifyPassword(oldPassword, user.password))) return c.json({ error: '原密码错误' }, 403);
+
+  user.password = await hashPassword(newPassword);
+  await c.env.USERS.put(payload.email, JSON.stringify(user));
+
+  return c.json({ success: true, message: '密码修改成功' });
+});
+
 app.get('/api/auth/me', async (c) => {
   const authHeader = c.req.header('Authorization');
   if (!authHeader?.startsWith('Bearer ')) return c.json({ error: '未登录' }, 401);
   try {
-    const payload = await verify(authHeader.slice(7), c.env.JWT_SECRET);
+    const payload = await verify(authHeader.slice(7), c.env.JWT_SECRET, 'HS256');
     return c.json({ user: payload });
   } catch {
     return c.json({ error: '登录已过期' }, 401);
@@ -216,8 +243,8 @@ app.post('/api/messages', async (c) => {
 
   let user;
   try {
-    user = await verify(authHeader.slice(7), c.env.JWT_SECRET);
-  } catch {
+    user = await verify(authHeader.slice(7), c.env.JWT_SECRET, 'HS256');
+  } catch (e) {
     return c.json({ error: '登录已过期' }, 401);
   }
 
@@ -267,7 +294,7 @@ app.put('/api/messages/:id', async (c) => {
 
   let user;
   try {
-    user = await verify(authHeader.slice(7), c.env.JWT_SECRET);
+    user = await verify(authHeader.slice(7), c.env.JWT_SECRET, 'HS256');
   } catch {
     return c.json({ error: '登录已过期' }, 401);
   }

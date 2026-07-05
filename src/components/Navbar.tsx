@@ -80,11 +80,14 @@ export default function Navbar() {
           padding: 0;
           width: 100%;
           max-width: 56rem;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
         }
+        .nav-bar::-webkit-scrollbar { display: none; }
         .nav-bar a, .nav-bar button {
-          font-size: 16px;
           color: #89800c;
-          padding: 10px 20px;
+          padding: 10px 14px;
           transition: all 0.2s ease;
           position: relative;
           text-decoration: none;
@@ -92,6 +95,14 @@ export default function Navbar() {
           background: none;
           border: none;
           cursor: pointer;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        @media (min-width: 640px) {
+          .nav-bar a, .nav-bar button { padding: 10px 20px; font-size: 16px; }
+        }
+        @media (max-width: 639px) {
+          .nav-bar a, .nav-bar button { font-size: 14px; padding: 10px 10px; }
         }
         .nav-bar a:not(:last-child)::after,
         .nav-bar button::after {

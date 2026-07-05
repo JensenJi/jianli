@@ -12,6 +12,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, username: string) => Promise<void>;
   logout: () => Promise<void>;
+  changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
 }
 
@@ -45,12 +46,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchUser = async (token: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      const res = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
+        const text = await res.text();
+        try {
+          const data = JSON.parse(text);
+          setUser(data.user);
+        } catch (e) {
+          console.error("fetchUser JSON parse error, response text:", text);
+          localStorage.removeItem("token");
+        }
       } else {
         localStorage.removeItem("token");
       }
@@ -62,32 +69,69 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const login = async (email: string, password: string) => {
-    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error("服务器返回: " + text.substring(0, 50));
+    }
     if (!res.ok) throw new Error(data.error || "登录失败");
     localStorage.setItem("token", data.token);
     setUser(data.user);
   };
 
   const register = async (email: string, password: string, username: string) => {
-    const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+    const res = await fetch(`${API_BASE_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password, username }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "注册失败");
-    localStorage.setItem("token", data.token);
-    setUser(data.user);
+    const text = await res.text();
+    try {
+      const data = JSON.parse(text);
+      if (!res.ok) throw new Error(data.error || "注册失败");
+      localStorage.setItem("token", data.token);
+      setUser(data.user);
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        console.error("register JSON parse error, response text:", text);
+      }
+      throw e;
+    }
   };
 
   const logout = async () => {
     localStorage.removeItem("token");
     setUser(null);
+  };
+
+  const changePassword = async (oldPassword: string, newPassword: string) => {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("未登录");
+
+    const res = await fetch(`${API_BASE_URL}/auth/password`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ oldPassword, newPassword }),
+    });
+
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error("服务器返回: " + text.substring(0, 50));
+    }
+    if (!res.ok) throw new Error(data.error || "修改失败");
   };
 
   const forgotPassword = async (email: string) => {
@@ -103,6 +147,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         login,
         register,
         logout,
+        changePassword,
         forgotPassword,
       }}
     >

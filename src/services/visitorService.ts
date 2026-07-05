@@ -3,7 +3,7 @@ import { API_BASE_URL } from "@/config";
 // 访客自动上报（每次页面访问调用一次）
 export function trackVisit(page: string = "/") {
   try {
-    fetch(`${API_BASE_URL}/api/visit`, {
+    fetch(`${API_BASE_URL}/visit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ page }),
@@ -24,12 +24,17 @@ export interface SiteStats {
 
 export const getStats = async (): Promise<SiteStats> => {
   const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE_URL}/api/stats`, {
+  const res = await fetch(`${API_BASE_URL}/stats`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!res.ok) throw new Error("获取统计失败");
-  const data = await res.json();
-  return data;
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("getStats JSON parse error, response text:", text);
+    throw e;
+  }
 };
 
 // 获取最近访问记录
@@ -49,10 +54,16 @@ export interface RecentVisitor {
 
 export const getRecentVisitors = async (): Promise<RecentVisitor[]> => {
   const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE_URL}/api/visitors/recent`, {
+  const res = await fetch(`${API_BASE_URL}/visitors/recent`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!res.ok) throw new Error("获取访客记录失败");
-  const data = await res.json();
-  return data.visitors || [];
+  const text = await res.text();
+  try {
+    const data = JSON.parse(text);
+    return data.visitors || [];
+  } catch (e) {
+    console.error("getRecentVisitors JSON parse error, response text:", text);
+    throw e;
+  }
 };

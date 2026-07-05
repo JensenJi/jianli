@@ -2,6 +2,11 @@ name = "jianli-api"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
+routes = [
+  { pattern = "www.jensenji.cn/api/*", zone_id = "2c8cf4d7271a989ea003f85383009c58" },
+  { pattern = "jensenji.cn/api/*", zone_id = "2c8cf4d7271a989ea003f85383009c58" },
+]
+
 [vars]
 JWT_SECRET = "jianli-secret-2026-jensenji"
 ADMIN_EMAIL = "jensenji@sohu.com"

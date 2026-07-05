@@ -29,12 +29,14 @@ import {
   Edit3,
   X,
   LogOut,
+  Key,
 } from "lucide-react";
+import Navbar from "@/components/Navbar";
 
 type Tab = "messages" | "pending" | "stats" | "visitors";
 
 export default function Admin() {
-  const { user, logout } = useAuth();
+  const { user, logout, changePassword } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("pending");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -45,6 +47,12 @@ export default function Admin() {
   const [replyText, setReplyText] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordMsg, setPasswordMsg] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   const deviceChartRef = useRef<HTMLDivElement>(null);
   const regionChartRef = useRef<HTMLDivElement>(null);
@@ -201,6 +209,10 @@ export default function Admin() {
     return d.toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
   };
 
+  const fmtLocation = (c: string, p: string, cy: string) => {
+    return [c, p, cy].filter(x => x && x !== 'unknown').join(' · ') || '未知';
+  };
+
   const deviceIcon = (d: string) => {
     if (d.includes("Windows")) return "🖥️";
     if (d === "macOS") return "🍎";
@@ -212,6 +224,29 @@ export default function Admin() {
 
   const pendingCount = messages.filter((m) => m.status === "pending").length;
 
+  const handleChangePassword = async () => {
+    setPasswordMsg("");
+    setPasswordError("");
+    if (newPassword !== confirmPassword) {
+      setPasswordError("两次输入的新密码不一致");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError("新密码至少需要6位");
+      return;
+    }
+    try {
+      await changePassword(oldPassword, newPassword);
+      setPasswordMsg("密码修改成功");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setShowPasswordForm(false), 1500);
+    } catch (err: any) {
+      setPasswordError(err.message || "修改失败");
+    }
+  };
+
   if (!user) return null;
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
@@ -222,46 +257,51 @@ export default function Admin() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 顶部栏 */}
-      <div className="bg-[#89800c] text-white px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">后台管理</h1>
-            <p className="text-sm text-white/70">Jensen Ji 管理面板</p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-sm"
-          >
-            <LogOut className="w-4 h-4" />
-            退出登录
-          </button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50" style={{ paddingTop: "50px" }}>
+      <Navbar />
 
-      <div className="max-w-6xl mx-auto px-6 py-6">
-        {/* Tab 导航 */}
-        <div className="flex gap-2 mb-6 overflow-x-auto">
-          {tabs.map((tab) => (
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
+        {/* Tab 导航 + 操作按钮 */}
+        <div className="flex flex-wrap gap-2 mb-6 items-center">
+          <div className="flex gap-2 overflow-x-auto flex-1 min-w-0">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
+                  activeTab === tab.key
+                    ? "bg-[#89800c] text-white shadow-lg"
+                    : "bg-white text-gray-600 hover:bg-gray-100 shadow"
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+                {tab.badge !== undefined && tab.badge > 0 && (
+                  <span className="bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 sm:gap-2 ml-auto shrink-0">
             <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === tab.key
-                  ? "bg-[#89800c] text-white shadow-lg"
-                  : "bg-white text-gray-600 hover:bg-gray-100 shadow"
-              }`}
+              onClick={() => setShowPasswordForm(true)}
+              className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              title="修改密码"
             >
-              {tab.icon}
-              {tab.label}
-              {tab.badge !== undefined && tab.badge > 0 && (
-                <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {tab.badge}
-                </span>
-              )}
+              <Key className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">修改密码</span>
             </button>
-          ))}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              title="退出登录"
+            >
+              <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">退出登录</span>
+            </button>
+          </div>
         </div>
 
         {/* 内容区 */}
@@ -283,34 +323,34 @@ export default function Admin() {
                   messages.map((msg) => (
                     <div key={msg.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
                       {/* 留言头部 */}
-                      <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-b">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-[#dbe08c] rounded-full flex items-center justify-center">
-                            <span className="text-sm font-bold text-[#89800c]">{msg.userName.charAt(0)}</span>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-5 py-3 bg-gray-50 border-b gap-2">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-[#dbe08c] rounded-full flex items-center justify-center shrink-0">
+                            <span className="text-xs sm:text-sm font-bold text-[#89800c]">{msg.userName.charAt(0)}</span>
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-800">{msg.userName}</span>
-                              <span className="text-xs text-gray-400">{msg.userEmail}</span>
+                              <span className="font-medium text-gray-800 text-sm sm:text-base truncate">{msg.userName}</span>
+                              <span className="text-xs text-gray-400 hidden sm:inline truncate">{msg.userEmail}</span>
                             </div>
-                            <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
+                            <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 text-xs text-gray-400 mt-0.5">
                               <span className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />{fmtDate(msg.createdAt)}
                               </span>
                               <span className="flex items-center gap-1">
                                 <Globe className="w-3 h-3" />
-                                {msg.visitor.country} · {msg.visitor.province} · {msg.visitor.city}
+                                {fmtLocation(msg.visitor.country, msg.visitor.province, msg.visitor.city)}
                               </span>
                               <span className="flex items-center gap-1">
                                 <Monitor className="w-3 h-3" />
                                 {deviceIcon(msg.visitor.device)} {msg.visitor.device}
                               </span>
-                              <span className="text-xs text-gray-400">{msg.visitor.browser}</span>
+                              <span className="hidden sm:inline">{msg.visitor.browser}</span>
                             </div>
                           </div>
                         </div>
                         <span
-                          className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          className={`text-xs px-2 py-1 rounded-full font-medium self-start sm:self-center shrink-0 ${
                             msg.status === "pending"
                               ? "bg-yellow-100 text-yellow-700"
                               : msg.status === "approved"
@@ -323,13 +363,13 @@ export default function Admin() {
                       </div>
 
                       {/* 留言内容 */}
-                      <div className="px-5 py-4">
+                      <div className="px-4 sm:px-5 py-4">
                         {editId === msg.id ? (
                           <div className="space-y-3">
                             <textarea
                               value={editText}
                               onChange={(e) => setEditText(e.target.value)}
-                              className="w-full px-3 py-2 border-2 border-[#dbe08c] rounded-lg focus:outline-none focus:border-[#89800c] resize-none"
+                              className="w-full px-3 py-2 border-2 border-[#dbe08c] rounded-lg focus:outline-none focus:border-[#89800c] resize-none text-sm"
                               rows={3}
                             />
                             <div className="flex gap-2 justify-end">
@@ -338,12 +378,12 @@ export default function Admin() {
                             </div>
                           </div>
                         ) : (
-                          <p className="text-gray-700 whitespace-pre-wrap">{msg.content}</p>
+                          <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base">{msg.content}</p>
                         )}
 
                         {/* 管理员回复 */}
                         {msg.reply && (
-                          <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+                          <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg px-3 sm:px-4 py-3">
                             <p className="text-xs text-blue-500 mb-1 font-medium">管理员回复</p>
                             <p className="text-blue-800 text-sm">{msg.reply}</p>
                           </div>
@@ -368,30 +408,30 @@ export default function Admin() {
                       </div>
 
                       {/* 操作栏 */}
-                      <div className="flex items-center gap-2 px-5 py-3 bg-gray-50 border-t">
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 px-4 sm:px-5 py-3 bg-gray-50 border-t">
                         {msg.status === "pending" && (
                           <>
-                            <button onClick={() => handleReview(msg.id, "approved")} className="flex items-center gap-1 px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700">
+                            <button onClick={() => handleReview(msg.id, "approved")} className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700">
                               <CheckCircle className="w-3.5 h-3.5" /> 通过
                             </button>
-                            <button onClick={() => handleReview(msg.id, "rejected")} className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600">
+                            <button onClick={() => handleReview(msg.id, "rejected")} className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600">
                               <XCircle className="w-3.5 h-3.5" /> 拒绝
                             </button>
-                            <button onClick={() => setReplyTo(msg.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                            <button onClick={() => setReplyTo(msg.id)} className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600">
                               <Reply className="w-3.5 h-3.5" /> 回复
                             </button>
                           </>
                         )}
                         {msg.status === "approved" && (
-                          <button onClick={() => setReplyTo(msg.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                          <button onClick={() => setReplyTo(msg.id)} className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600">
                             <Reply className="w-3.5 h-3.5" /> 回复
                           </button>
                         )}
-                        <button onClick={() => { setEditId(msg.id); setEditText(msg.content); }} className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                        <button onClick={() => { setEditId(msg.id); setEditText(msg.content); }} className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
                           <Edit3 className="w-3.5 h-3.5" /> 编辑
                         </button>
                         <div className="flex-1"></div>
-                        <button onClick={() => handleDelete(msg.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-lg">
+                        <button onClick={() => handleDelete(msg.id)} className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-lg">
                           <Trash2 className="w-3.5 h-3.5" /> 删除
                         </button>
                       </div>
@@ -456,7 +496,7 @@ export default function Admin() {
                           <tr key={v.id} className="border-b border-gray-100 hover:bg-gray-50">
                             <td className="px-4 py-3 text-sm text-gray-600">{fmtDate(v.timestamp)}</td>
                             <td className="px-4 py-3 text-sm text-gray-800 font-medium">{v.page}</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{v.visitor.country} · {v.visitor.province} · {v.visitor.city}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{fmtLocation(v.visitor.country, v.visitor.province, v.visitor.city)}</td>
                             <td className="px-4 py-3 text-sm text-gray-600">{deviceIcon(v.visitor.device)} {v.visitor.device}</td>
                             <td className="px-4 py-3 text-sm text-gray-600">{v.visitor.browser}</td>
                             <td className="px-4 py-3 text-sm text-gray-400">{v.visitor.ip}</td>
@@ -471,6 +511,58 @@ export default function Admin() {
           </>
         )}
       </div>
+
+      {/* 修改密码弹窗 */}
+      {showPasswordForm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowPasswordForm(false)}>
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-800 mb-4">修改密码</h3>
+            {passwordMsg && (
+              <div className="bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm mb-4">{passwordMsg}</div>
+            )}
+            <div className="space-y-3">
+              <input
+                type="password"
+                placeholder="原密码"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#89800c]"
+              />
+              <input
+                type="password"
+                placeholder="新密码（至少6位）"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#89800c]"
+              />
+              <input
+                type="password"
+                placeholder="确认新密码"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#89800c]"
+              />
+              {passwordError && (
+                <p className="text-red-500 text-sm">{passwordError}</p>
+              )}
+            </div>
+            <div className="flex gap-3 mt-4 justify-end">
+              <button
+                onClick={() => { setShowPasswordForm(false); setPasswordMsg(""); setPasswordError(""); }}
+                className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleChangePassword}
+                className="px-4 py-2 text-sm bg-[#89800c] text-white rounded-lg hover:bg-[#6b6409]"
+              >
+                确认修改
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

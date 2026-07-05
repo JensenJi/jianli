@@ -270,6 +270,7 @@ export default function Home() {
   const [draggedSticker, setDraggedSticker] = useState<number | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [showWelcome, setShowWelcome] = useState(true);
   const photoWallRef = useRef<HTMLDivElement>(null);
   
   // 气泡追逐游戏状态
@@ -440,7 +441,7 @@ export default function Home() {
 
         <div
           ref={photoWallRef}
-          className="relative bg-[#dbe08c] border-b border-white shadow-sm"
+          className="relative bg-[#dbe08c] border-b border-white shadow-sm overflow-hidden"
           style={{ minHeight: "220px" }}
           onMouseMove={handleMouseMoveDrag}
           onMouseUp={handleMouseUp}
@@ -468,19 +469,25 @@ export default function Home() {
             />
           ))}
 
-          <div className="absolute bottom-4 right-6 text-left z-[1001] bg-[#dbe08c] rounded-lg px-4 py-3 shadow-md">
-            <p className="text-3xl font-bold text-gray-800">
-              欢迎光临我的个人站点
-            </p>
-            <p className="text-base text-gray-700 mt-1">
-              一个做了30多年鞋服爱好编程退休老灯的主页
-            </p>
-          </div>
+          {showWelcome && (
+            <div
+              onClick={() => setShowWelcome(false)}
+              className="absolute bottom-2 sm:bottom-4 right-2 sm:right-6 text-left z-[1001] bg-[#dbe08c] rounded-lg px-3 sm:px-4 py-2 sm:py-3 shadow-md max-w-[95%] sm:max-w-none cursor-pointer hover:bg-[#c9ce7a] transition-colors"
+              title="点击关闭"
+            >
+              <p className="text-base sm:text-3xl font-bold text-gray-800 leading-tight sm:leading-normal whitespace-normal break-words">
+                欢迎光临我的个人站点
+              </p>
+              <p className="text-xs sm:text-base text-gray-700 mt-0.5 sm:mt-1 whitespace-normal break-words">
+                一个做了30多年鞋服爱好编程退休老灯的主页
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="bg-white border-l-4 border-r-4 border-[#dbe08c] relative">
-          <div className="absolute -top-20 left-20 z-20">
-            <div className="w-40 h-40 rounded-full border-4 border-[#dbe08c] overflow-hidden shadow-xl">
+          <div className="absolute -top-16 sm:-top-20 left-1/2 -translate-x-1/2 sm:left-20 sm:translate-x-0 z-20">
+            <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-[#dbe08c] overflow-hidden shadow-xl">
               <img
                 src={avatar}
                 alt="我的头像"
@@ -489,9 +496,9 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex min-h-[160px]">
-            <div className="w-1/2 p-4 pl-20">
-              <h1 className="text-xl font-bold text-gray-800 mt-20">Jensen Ji</h1>
+          <div className="flex flex-col sm:flex-row min-h-[160px]">
+            <div className="w-full sm:w-1/2 p-4 pt-4 sm:pt-4 sm:pl-20 text-center sm:text-left">
+              <h1 className="text-xl font-bold text-gray-800 mt-4 sm:mt-20">Jensen Ji</h1>
               <p className="text-gray-600 text-sm mt-1">经理, 研发部 | JensenJi</p>
               <div className="flex flex-wrap gap-3 text-xs text-gray-500 mt-1">
                 <span>山东·济宁</span>
@@ -517,7 +524,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="w-1/2 p-4">
+            <div className="w-full sm:w-1/2 p-4">
               <div className="flex flex-col gap-3">
                 {contactInfo.map((item, index) => (
                   <div key={index} className="flex items-center gap-3">
@@ -635,7 +642,7 @@ export default function Home() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="border-t border-gray-200 p-4">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-bold text-gray-800">技能特长</h2>
